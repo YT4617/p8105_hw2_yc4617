@@ -1,0 +1,196 @@
+---
+title: "p8105_hw2_yc4617"
+output: github_document
+author: Yutong Chen
+date: "2024-09-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Problem 0:
+## Read csv file
+```{r}
+data = read.csv("NYC_Transit_Subway_Entrance_And_Exit_Data.csv")
+head(data)
+```
+```{r}
+library(dplyr)
+```
+
+## Convert Entry from charater to logical variable
+```{r}
+data$Entry <- case_match(data$Entry,"YES" ~ TRUE, "NO" ~ FALSE)
+head(data)
+```
+## Describe the dataset
+The data set contains these variables: `r paste(names(data), collapse = ", ")`. Until now, I read the data, then convert Entry variable from charater to logical variable, and show the variables' names. The resulting data set has `r dim(data)[1]` rows and `r dim(data)[2]` columns. These data are not tidy because there are some NA in column Route 8 - Route 11.
+
+# Problem 1:
+## Distinct station
+```{r}
+number_distinct_station = data %>%
+  distinct(Line, Station.Name)%>%
+  nrow()
+number_distinct_station
+```
+There are `r number_distinct_station` distinct stations.
+
+## ADA compliant
+```{r}
+number_ADA_compliant = data %>%
+  filter(ADA == TRUE) %>%
+  nrow()
+number_ADA_compliant
+```
+There are `r number_ADA_compliant` stations that are ADA compliant.
+
+## Proportion of entrances
+```{r}
+proportion_entrances = data %>%
+  filter(Vending == "NO")%>%
+  summarise(rate = mean(Entry == "YES")) %>%
+  pull(rate)
+```
+There are `r proportion_entrances` proportion of station entrances / exits without vending allow entrance.
+
+## ADA in Route A
+```{r}
+library(tidyverse)
+
+data_reformat = data %>%
+  mutate(across(starts_with("Route"), as.character))%>%
+  pivot_longer(cols = starts_with("Route"), 
+               names_to = "Route_Number", 
+               values_to = "Route")
+data_reformat
+number_A = data_reformat %>%
+  filter(Route == "A") %>%
+  distinct(Line, Station.Name) %>%
+  nrow()
+number_A_ADA = data_reformat %>%
+  filter(Route == "A", ADA == TRUE) %>%
+  distinct(Line, Station.Name) %>%
+  nrow()
+```
+
+There are `r number_A` distinct stations serve the A train. Of the stations that serve the A train, there are `r number_A_ADA` ADA compliant.
+
+# Problem 2:
+## Preprocess files
+```{r}
+library(readxl)
+
+Mr_Trash_wheel = read_excel("202309 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel") %>%
+  select(where(~!all(is.na(.)))) %>%
+  rename(Weight_tons = "Weight (tons)",
+         Volume_cubic_yards = "Volume (cubic yards)",
+         Plastic_Bottles = "Plastic Bottles",
+         Cigarette_Butts = "Cigarette Butts",
+         Glass_Bottles = "Glass Bottles",
+         Plastic_Bags = "Plastic Bags",
+         Sports_Balls = "Sports Balls",
+         Homes_Powered = "Homes Powered*") %>%
+  filter(!is.na(Dumpster)) %>%
+  mutate(Sports_Balls = as.integer(round(Sports_Balls))) %>%
+  mutate(Trash_wheel = "Mr.Trash Wheel") %>%
+  mutate(Year = as.character(Year))
+
+Professor_Trash_wheel = read_excel("202309 Trash Wheel Collection Data.xlsx",sheet = "Professor Trash Wheel") %>%
+  select(where(~!all(is.na(.)))) %>%
+  rename(Weight_tons = "Weight (tons)",
+         Volume_cubic_yards = "Volume (cubic yards)",
+         Plastic_Bottles = "Plastic Bottles",
+         Cigarette_Butts = "Cigarette Butts",
+         Glass_Bottles = "Glass Bottles",
+         Plastic_Bags = "Plastic Bags",
+         Homes_Powered = "Homes Powered*") %>%
+  filter(!is.na(Dumpster)) %>%
+  mutate(Trash_wheel = "Professor Trash Wheel")%>%
+  mutate(Year = as.character(Year))
+
+Gwynnda_Trash_wheel = read_excel("202309 Trash Wheel Collection Data.xlsx",sheet = "Gwynnda Trash Wheel") %>%
+  select(where(~!all(is.na(.)))) %>%
+  rename(Weight_tons = "Weight (tons)",
+         Volume_cubic_yards = "Volume (cubic yards)",
+         Plastic_Bottles = "Plastic Bottles",
+         Cigarette_Butts = "Cigarette Butts",
+         Plastic_Bags = "Plastic Bags",
+         Homes_Powered = "Homes Powered*") %>%
+  filter(!is.na(Dumpster)) %>%
+  mutate(Trash_wheel = "Gwynnda Trash Wheel")%>%
+  mutate(Year = as.character(Year))
+```
+
+## Combine files
+```{r}
+Combined_Trash_wheel = bind_rows(Mr_Trash_wheel,Professor_Trash_wheel,Gwynnda_Trash_wheel)
+
+Weight_Professor = Combined_Trash_wheel %>%
+  filter(Trash_wheel == "Professor Trash Wheel") %>%
+  summarise(result = sum(Weight_tons)) %>%
+  pull(result)
+
+Number_Cigarette = Combined_Trash_wheel %>%
+  filter(Trash_wheel == "Gwynnda Trash Wheel", Month == "June", Year == "2022")%>%
+  nrow()
+Number_Cigarette
+```
+The total weight of trash collected by Professor Trash Wheel is `r Weight_Professor`. And the total number of cigarette butts collected by Gwynnda in June of 2022 is `r Number_Cigarette`.
+
+# Problem 3:
+## Clean files
+```{r}
+Bakers = read_csv("bakers.csv")
+Bakers = janitor::clean_names(Bakers)
+Bakes = read_csv("bakes.csv")
+Bakes = janitor::clean_names(Bakes)
+Results = read_csv("results.csv", skip = 2)
+```
+```{r}
+library(stringr)
+Bakes = Bakes %>%
+  mutate(baker = str_replace_all(baker, '"', ''))
+
+Bakers <- Bakers %>%
+  mutate(baker_name = word(baker_name, 1))
+
+missing_bakers <- anti_join(Bakes, Bakers, by = c('series', 'baker' = 'baker_name'))
+print(missing_bakers)
+```
+
+```{r}
+Combined = Bakes %>%
+  left_join(Bakers,by = c('series', 'baker' = "baker_name"))
+Combined = Combined %>%
+  left_join(Results, by = c('series', 'episode', 'baker'))
+
+Combined <- Combined %>%
+  mutate(across(c("technical"), ~replace_na(., -1))) %>%
+  mutate(across(c("result"), ~replace_na(., "UNKNOWN")))
+
+write_csv(Combined, "Combined_bakers_dataset.csv")
+```
+Cleaning steps: When I import these data sets, firstly clean their variables names by using janitor::clean_names. For results.csv, I skip two first unnecessary rows. And then I remove the signal "" in baker names in bakes.csv and extract first name of baker names in bakers.csv to make them the same. After that, I check if there is any missing bakers in two files. After merging these three files, I handle the NA in technical and result columns by replacing NA with -1 and "UNKNOWN" based on their data type. 
+
+## Winners from season 5 to 10 
+```{r}
+Combined
+Winner_bakers <- Combined %>%
+  filter(series >= 5 & series <= 10) %>%
+  filter(result %in% c("STAR BAKER", "WINNER")) %>%
+  select(series, episode, baker, result)
+```
+Comment: There is no predictable overall winners because each winner only appear once and they have the same possibility to be a overall winner. In each series, intuitively, winner of the series should be the one who frequently get star baker. In fact, although Richard got star baker in series 5 for 5 times, winner of series 5 is Nancy. That's surprising.
+
+## Average of season 1 and 5
+```{r}
+Viewers = read_csv("viewers.csv")
+
+Season_1_avg <- mean(Viewers$"Series 1", na.rm = TRUE)
+Season_5_avg <- mean(Viewers$"Series 5", na.rm = TRUE)
+```
+The average viewership in Season 1 is `r Season_1_avg`. In Season 5, the average viewership is `r Season_5_avg`.
+
+
+
