@@ -16,11 +16,15 @@ head(data)
 ```
 ```{r}
 library(dplyr)
+library(tidyverse)
 ```
 
 ## Convert Entry from charater to logical variable
 ```{r}
-data$Entry <- case_match(data$Entry,"YES" ~ TRUE, "NO" ~ FALSE)
+data <- data %>%
+  mutate(Entry = case_match(Entry, 
+                            "YES" ~ TRUE, 
+                            "NO" ~ FALSE))
 head(data)
 ```
 ## Describe the dataset
@@ -81,7 +85,7 @@ There are `r number_A` distinct stations serve the A train. Of the stations that
 ```{r}
 library(readxl)
 
-Mr_Trash_wheel = read_excel("202309 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel") %>%
+Mr_Trash_wheel = read_excel("202409 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel") %>%
   select(where(~!all(is.na(.)))) %>%
   rename(Weight_tons = "Weight (tons)",
          Volume_cubic_yards = "Volume (cubic yards)",
@@ -187,8 +191,14 @@ Comment: There is no predictable overall winners because each winner only appear
 ```{r}
 Viewers = read_csv("viewers.csv")
 
-Season_1_avg <- mean(Viewers$"Series 1", na.rm = TRUE)
-Season_5_avg <- mean(Viewers$"Series 5", na.rm = TRUE)
+Season_1_avg <- Viewers %>%
+  pull(`Series 1`) %>% 
+  mean(na.rm = TRUE)
+
+Season_5_avg <- Viewers %>%
+  pull(`Series 5`) %>% 
+  mean(na.rm = TRUE)
+
 ```
 The average viewership in Season 1 is `r Season_1_avg`. In Season 5, the average viewership is `r Season_5_avg`.
 
