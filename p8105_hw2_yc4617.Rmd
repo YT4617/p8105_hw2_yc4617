@@ -136,8 +136,9 @@ Weight_Professor = Combined_Trash_wheel %>%
   pull(result)
 
 Number_Cigarette = Combined_Trash_wheel %>%
-  filter(Trash_wheel == "Gwynnda Trash Wheel", Month == "June", Year == "2022")%>%
-  nrow()
+  filter(Trash_wheel == "Gwynnda Trash Wheel", Month == "June", Year == "2022") %>%
+  summarise(result = sum(Cigarette_Butts)) %>%
+  pull(result)
 Number_Cigarette
 ```
 The total weight of trash collected by Professor Trash Wheel is `r Weight_Professor`. And the total number of cigarette butts collected by Gwynnda in June of 2022 is `r Number_Cigarette`.
