@@ -25,10 +25,11 @@ data <- data %>%
   mutate(Entry = case_match(Entry, 
                             "YES" ~ TRUE, 
                             "NO" ~ FALSE))
+data <- select(data,Line:Route11,Entry,Vending,Entrance.Type,ADA)
 head(data)
 ```
 ## Describe the dataset
-The data set contains these variables: `r paste(names(data), collapse = ", ")`. Until now, I read the data, then convert Entry variable from charater to logical variable, and show the variables' names. The resulting data set has `r dim(data)[1]` rows and `r dim(data)[2]` columns. These data are not tidy because there are some NA in column Route 8 - Route 11.
+The data set contains these variables: `r paste(names(data), collapse = ", ")`. Until now, I read the data, then convert Entry variable from charater to logical variable, select several important variables from it, and show the variables' names. The resulting data set has `r dim(data)[1]` rows and `r dim(data)[2]` columns. These data are not tidy because there are some NA in column Route 8 - Route 11.
 
 # Problem 1:
 ## Distinct station
@@ -43,7 +44,8 @@ There are `r number_distinct_station` distinct stations.
 ## ADA compliant
 ```{r}
 number_ADA_compliant = data %>%
-  filter(ADA == TRUE) %>%
+  filter(ADA == TRUE)%>%
+  distinct(Line, Station.Name)%>%
   nrow()
 number_ADA_compliant
 ```
